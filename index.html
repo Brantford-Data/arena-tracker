@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEC Arena Financial Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 40px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }
+        .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #7f8c8d; }
+        .card .value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .chart-container { background: white; padding: 20px; border-radius: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Brantford SEC Arena Tracker</h1>
+        <p>Tracking the impact of interest rates on the $140M Debenture</p>
+    </header>
+    <div class="kpi-grid">
+        <div class="card"><h3>Current Bond Yield</h3><div class="value" id="yield">--%</div></div>
+        <div class="card"><h3>Total Interest Cost</h3><div class="value" id="cost">$--</div></div>
+        <div class="card"><h3>Household Impact</h3><div class="value" id="impact">$--</div></div>
+    </div>
+    <div class="chart-container"><canvas id="rateChart"></canvas></div>
+</div>
+<script>
+    async function fetchData() {
+        try {
+            const response = await fetch('./interest_rate_log.csv');
+            if (!response.ok) throw new Error("CSV not found");
+            const data = await response.text();
+            const rows = data.split('\n').slice(1).filter(row => row.trim() !== '');
+            
+            const dates = [], costs = [], yields = [];
+            let last = {};
+
+            rows.forEach(row => {
+                const c = row.split(',');
+                dates.push(c[0]);
+                yields.push(parseFloat(c[1]));
+                costs.push(parseFloat(c[4]));
+                last = { yield: c[1], cost: parseFloat(c[4]), impact: parseFloat(c[5]) };
+            });
+
+            document.getElementById('yield').innerText = last.yield + '%';
+            document.getElementById('cost').innerText = '$' + (last.cost / 1000000).toFixed(1) + 'M';
+            document.getElementById('impact').innerText = '$' + last.impact;
+
+            new Chart(document.getElementById('rateChart'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Total Interest (Millions)',
+                        data: costs.map(c => c / 1000000),
+                        borderColor: '#e74c3c',
+                        fill: false
+                    }]
+                }
+            });
+        } catch (e) { console.log("Waiting for data..."); }
+    }
+    fetchData();
+</script>
+</body>
+</html>
