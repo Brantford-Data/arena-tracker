@@ -66,7 +66,14 @@
             <tr><td>Police Station Redevelop.</td><td class="num">$56.0 M</td><td class="num" id="row-police-pay">--</td><td class="num" id="row-police-int">--</td></tr>
             <tr><td>Southwest Comm. Centre</td><td class="num">$44.0 M</td><td class="num" id="row-sw-pay">--</td><td class="num" id="row-sw-int">--</td></tr>
             <tr><td>Oak Park Rd Extension</td><td class="num">$97.0 M</td><td class="num" id="row-oak-pay">--</td><td class="num" id="row-oak-int">--</td></tr>
-        </tbody>
+        </tbody><tfoot>
+            <tr style="font-weight: bold; background-color: #f1f2f6; border-top: 2px solid #2c3e50;">
+                <td>TOTALS</td>
+                <td class="num" id="table-total-principal">--</td>
+                <td class="num" id="table-total-annual">--</td>
+                <td class="num" id="table-total-interest">--</td>
+            </tr>
+        </tfoot>
     </table>
 
     <div class="chart-container"><canvas id="rateChart"></canvas></div>
@@ -121,7 +128,25 @@
             const police = calc(p_police); document.getElementById('row-police-pay').innerText = '$' + police.pay; document.getElementById('row-police-int').innerText = '$' + police.int;
             const sw = calc(p_sw); document.getElementById('row-sw-pay').innerText = '$' + sw.pay; document.getElementById('row-sw-int').innerText = '$' + sw.int;
             const oak = calc(p_oak); document.getElementById('row-oak-pay').innerText = '$' + oak.pay; document.getElementById('row-oak-int').innerText = '$' + oak.int;
+// ... existing oak lines ...
+            const oak = calc(p_oak); 
+            document.getElementById('row-oak-pay').innerText = '$' + oak.pay; 
+            document.getElementById('row-oak-int').innerText = '$' + oak.int;
 
+            // --- NEW TOTALS LOGIC ---
+            // 1. Total Principal is hardcoded sum of projects
+            const totalPrincipal = p_arena + p_police + p_sw + p_oak;
+            
+            // 2. Total Annual is already calculated as (last.annual)
+            const totalAnnual = last.annual;
+
+            // 3. Total Interest = (Total Annual * 30 Years) - Total Principal
+            const totalInterest = (totalAnnual * term) - totalPrincipal;
+
+            // Update the Footer Cells
+            document.getElementById('table-total-principal').innerText = '$' + (totalPrincipal / 1000000).toFixed(1) + ' M';
+            document.getElementById('table-total-annual').innerText = '$' + (totalAnnual / 1000000).toFixed(2) + 'M';
+            document.getElementById('table-total-interest').innerText = '$' + (totalInterest / 1000000).toFixed(1) + 'M';
             const ctx = document.getElementById('rateChart').getContext('2d');
             new Chart(ctx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Total Annual Pay', data: annualCosts.map(c=>c/1000000), borderColor: '#c0392b', fill: true }] } });
 
