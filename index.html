@@ -6,7 +6,7 @@
     <title>Brantford City Debt Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #c0392b; --bg: #f4f7f6; }
+        :root { --primary: #2c3e50; --accent: #c0392b; --bg: #f4f7f6; --info-bg: #e8f4f8; --info-text: #2980b9; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; }
         
@@ -26,6 +26,12 @@
         .card .value { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
         .card .sub-value { font-size: 0.75rem; color: #95a5a6; margin-top: 3px; }
         .card.danger .value { color: var(--accent); }
+
+        /* Info Section */
+        .info-section { background: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .info-section h3 { margin-top: 0; color: var(--primary); }
+        .info-section h4 { margin: 15px 0 5px 0; color: #555; font-size: 1rem; }
+        .info-section p { margin: 0; line-height: 1.5; color: #666; font-size: 0.95rem; }
 
         /* Table */
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; }
@@ -79,6 +85,19 @@
             <div class="value" id="total-annual">$--</div>
             <div class="sub-value">Taxpayer Burden / Year</div>
         </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Understanding "Total Annual Payments"</h3>
+        
+        <h4>The Definition</h4>
+        <p>Think of this as the city's "Mortgage Payment." It combines the principal repayment (paying back the loan) plus the interest for all tracked projects combined.</p>
+        
+        <h4>What it Means for You</h4>
+        <p>This is the extra cash the City must find in the budget <strong>every single year for 30 years</strong> just to pay for these buildings. This money cannot be used for parks, roads, or other services.</p>
+        
+        <h4>The Bottom Line</h4>
+        <p>It is the "Price of Admission" for these projects, expressed as an annual bill to the taxpayer.</p>
     </div>
 
     <h3>Project Breakdown (Estimated)</h3>
