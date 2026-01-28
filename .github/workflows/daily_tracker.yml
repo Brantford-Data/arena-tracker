@@ -22,7 +22,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install Dependencies
-        run: pip install requests yfinance
+        run: pip install requests yfinance lxml
 
       - name: Run Script
         run: python main.py
