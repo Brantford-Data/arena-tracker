@@ -1,1 +1,31 @@
+name: Daily Rate Tracker
 
+on:
+  schedule:
+    - cron: '0 14 * * *' # Runs at 9:00 AM EST
+  workflow_dispatch:      # Allows manual testing
+
+permissions:
+  contents: write
+
+jobs:
+  track-rates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: pip install requests
+      - name: Run Script
+        run: python main.py
+      - name: Save Data
+        run: |
+          git config --global user.name "RateBot"
+          git config --global user.email "bot@noreply.github.com"
+          git add interest_rate_log.csv
+          git commit -m "Daily Update" || exit 0
+          git push
