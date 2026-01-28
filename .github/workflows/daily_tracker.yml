@@ -3,7 +3,7 @@ name: Daily Rate Tracker
 on:
   push:
   schedule:
-    - cron: '0 14 * * *' # Runs at 9:00 AM EST
+    - cron: '0 14-22 * * 1-5' # Runs at 9:00 AM EST
   workflow_dispatch:
 
 permissions:
