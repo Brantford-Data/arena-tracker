@@ -153,7 +153,8 @@
 
     async function fetchData() {
         try {
-            const response = await fetch('./interest_rate_log.csv');
+            // Add a timestamp to force the browser to get a fresh file every time
+const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
             const data = await response.text();
             
             const rows = data.split('\n').slice(1).filter(row => row.trim() !== '');
