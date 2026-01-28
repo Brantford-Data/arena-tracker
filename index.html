@@ -6,7 +6,7 @@
     <title>Brantford City Debt Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #c0392b; --bg: #f4f7f6; --info-bg: #e8f4f8; --info-text: #2980b9; }
+        :root { --primary: #2c3e50; --accent: #c0392b; --bg: #f4f7f6; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; }
         
@@ -14,33 +14,25 @@
         h1 { margin: 0; color: var(--primary); }
         p.subtitle { color: #666; font-size: 0.9rem; margin-top: 5px; }
 
-        .warning-box { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: #856404; border-radius: 4px; }
-
-        /* Grid Layouts */
+        .error-box { background: #fadbd8; border-left: 5px solid #c0392b; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: #721c24; border-radius: 4px; display: none; }
+        
+        /* Cards */
         .rate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .impact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px; }
-
-        /* Cards */
         .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
         .card h3 { margin: 0 0 5px 0; font-size: 0.85rem; color: #7f8c8d; }
         .card .value { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
         .card .sub-value { font-size: 0.75rem; color: #95a5a6; margin-top: 3px; }
         .card.danger .value { color: var(--accent); }
-
-        /* Info Section */
-        .info-section { background: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .info-section h3 { margin-top: 0; color: var(--primary); }
-        .info-section h4 { margin: 15px 0 5px 0; color: #555; font-size: 1rem; }
-        .info-section p { margin: 0; line-height: 1.5; color: #666; font-size: 0.95rem; }
-
+        
         /* Table */
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: var(--primary); color: white; font-size: 0.85rem; text-transform: uppercase; }
-        tr:last-child td { border-bottom: none; }
         .num { text-align: right; }
-
-        /* Chart */
+        
+        /* Info & Chart */
+        .info-section { background: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid var(--primary); }
         .chart-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     </style>
 </head>
@@ -48,196 +40,94 @@
 
 <div class="container">
     <header>
-    <h1>Brantford Debt Dashboard</h1>
-    <p class="subtitle">Tracking the interest rate risk on planned Capital Projects</p>
-    <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;">Last Updated: <span id="last-update" style="font-weight:bold;">--</span></p>
-</header>
+        <h1>Brantford Debt Dashboard (v2)</h1>
+        <p class="subtitle">Tracking the interest rate risk on planned Capital Projects</p>
+        <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;">Last Updated: <span id="last-update" style="font-weight:bold;">Loading...</span></p>
+    </header>
 
-    <div class="warning-box">
-        <strong>⚠️ Important Context:</strong> Interest rates are not set until the project is completed and the debenture is issued. The costs below are <em>estimates</em> based on today's live rates. If rates rise before construction finishes, these costs will increase.
-    </div>
+    <div id="debug-console" class="error-box"></div>
 
     <div class="rate-grid">
-        <div class="card">
-            <h3>Canada 30yr Bond</h3>
-            <div class="value" id="bond-yield">--%</div>
-            <div class="sub-value">Live Market Rate</div>
-        </div>
-        <div class="card">
-            <h3>+ Municipal Spread</h3>
-            <div class="value" id="spread">0.90%</div>
-            <div class="sub-value">Risk Premium</div>
-        </div>
-        <div class="card">
-            <h3>= Est. Debenture Rate</h3>
-            <div class="value" id="total-rate">--%</div>
-            <div class="sub-value">Total Interest Rate</div>
-        </div>
+        <div class="card"><h3>Canada 30yr Bond</h3><div class="value" id="bond-yield">--%</div><div class="sub-value">Live Market Rate</div></div>
+        <div class="card"><h3>+ Municipal Spread</h3><div class="value" id="spread">0.90%</div><div class="sub-value">Risk Premium</div></div>
+        <div class="card"><h3>= Est. Debenture Rate</h3><div class="value" id="total-rate">--%</div><div class="sub-value">Total Interest Rate</div></div>
     </div>
 
     <div class="impact-grid">
-        <div class="card danger">
-            <h3>Total Estimated Debt</h3>
-            <div class="value" id="total-principal">$337.0 M</div>
-            <div class="sub-value">Combined Project Value</div>
-        </div>
-        <div class="card danger">
-            <h3>Total Annual Payments</h3>
-            <div class="value" id="total-annual">$--</div>
-            <div class="sub-value">Taxpayer Burden / Year</div>
-        </div>
-    </div>
-
-    <div class="info-section">
-        <h3>Understanding "Total Annual Payments"</h3>
-        
-        <h4>The Definition</h4>
-        <p>Think of this as the city's "Mortgage Payment." It combines the principal repayment (paying back the loan) plus the interest for all tracked projects combined.</p>
-        
-        <h4>What it Means for You</h4>
-        <p>This is the extra cash the City must find in the budget <strong>every single year for 30 years</strong> just to pay for these buildings. This money cannot be used for parks, roads, or other services.</p>
-        
-        <h4>The Bottom Line</h4>
-        <p>It is the "Price of Admission" for these projects, expressed as an annual bill to the taxpayer.</p>
+        <div class="card danger"><h3>Total Estimated Debt</h3><div class="value" id="total-principal">$337.0 M</div><div class="sub-value">Combined Project Value</div></div>
+        <div class="card danger"><h3>Total Annual Payments</h3><div class="value" id="total-annual">$--</div><div class="sub-value">Taxpayer Burden / Year</div></div>
     </div>
 
     <h3>Project Breakdown (Estimated)</h3>
     <table>
-        <thead>
-            <tr>
-                <th>Project Name</th>
-                <th class="num">Principal</th>
-                <th class="num">Annual Payment</th>
-                <th class="num">30-Year Interest</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Project Name</th><th class="num">Principal</th><th class="num">Annual Payment</th><th class="num">30-Year Interest</th></tr></thead>
         <tbody>
-            <tr>
-                <td>SEC Arena</td>
-                <td class="num">$140.0 M</td>
-                <td class="num" id="row-arena-pay">--</td>
-                <td class="num" id="row-arena-int">--</td>
-            </tr>
-            <tr>
-                <td>Police Station Redevelop.</td>
-                <td class="num">$56.0 M</td>
-                <td class="num" id="row-police-pay">--</td>
-                <td class="num" id="row-police-int">--</td>
-            </tr>
-            <tr>
-                <td>Southwest Comm. Centre</td>
-                <td class="num">$44.0 M</td>
-                <td class="num" id="row-sw-pay">--</td>
-                <td class="num" id="row-sw-int">--</td>
-            </tr>
-             <tr>
-                <td>Oak Park Rd Extension</td>
-                <td class="num">$97.0 M</td>
-                <td class="num" id="row-oak-pay">--</td>
-                <td class="num" id="row-oak-int">--</td>
-            </tr>
+            <tr><td>SEC Arena</td><td class="num">$140.0 M</td><td class="num" id="row-arena-pay">--</td><td class="num" id="row-arena-int">--</td></tr>
+            <tr><td>Police Station Redevelop.</td><td class="num">$56.0 M</td><td class="num" id="row-police-pay">--</td><td class="num" id="row-police-int">--</td></tr>
+            <tr><td>Southwest Comm. Centre</td><td class="num">$44.0 M</td><td class="num" id="row-sw-pay">--</td><td class="num" id="row-sw-int">--</td></tr>
+            <tr><td>Oak Park Rd Extension</td><td class="num">$97.0 M</td><td class="num" id="row-oak-pay">--</td><td class="num" id="row-oak-int">--</td></tr>
         </tbody>
     </table>
 
-    <div class="chart-container">
-        <canvas id="rateChart"></canvas>
-    </div>
+    <div class="chart-container"><canvas id="rateChart"></canvas></div>
 </div>
 
 <script>
-    // HARDCODED PRINCIPALS FOR DISPLAY CALCULATION
-    const p_arena = 140000000;
-    const p_police = 56000000;
-    const p_sw = 44000000;
-    const p_oak = 97000000;
-    const term = 30;
+    const p_arena = 140000000; const p_police = 56000000; const p_sw = 44000000; const p_oak = 97000000; const term = 30;
+
+    function showError(msg) {
+        const box = document.getElementById('debug-console');
+        box.style.display = 'block';
+        box.innerHTML = "<strong>System Error:</strong> " + msg;
+    }
 
     async function fetchData() {
         try {
-            // Add a timestamp to force the browser to get a fresh file every time
-const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
-            const data = await response.text();
+            // This timestamp ?t=... forces the browser to ignore cache
+            const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
+            if (!response.ok) throw new Error("File not found (404)");
             
-            const rows = data.split('\n').slice(1).filter(row => row.trim() !== '');
-            const dates = [];
-            const annualCosts = [];
-            let last = {};
+            const data = await response.text();
+            const rows = data.split('\n').slice(1).filter(r => r.trim() !== '');
+            if (rows.length === 0) throw new Error("File is empty");
 
+            const dates = []; const annualCosts = []; let last = null;
             rows.forEach(row => {
                 const c = row.split(',');
-                // CSV: 0=Date, 1=BondYield, 2=TotalRate, 3=GrandAnnual, 4=GrandInterest
-                dates.push(c[0]);
-                annualCosts.push(parseFloat(c[3])); // Graphing Total City Annual Payment
-                
-                last = { 
-                    yield: parseFloat(c[1]), 
-                    totalRate: parseFloat(c[2]), 
-                    annual: parseFloat(c[3]),
-                    date: c[0]   // This captures the "YYYY-MM-DD HH:MM"
-                };
+                if (c.length >= 4) {
+                    dates.push(c[0]);
+                    annualCosts.push(parseFloat(c[3]));
+                    last = { date: c[0], yield: parseFloat(c[1]), totalRate: parseFloat(c[2]), annual: parseFloat(c[3]) };
+                }
             });
 
-            // UPDATE TIMESTAMP
-            document.getElementById('last-update').innerText = last.date; 
-                yield: parseFloat(c[1]), 
-                totalRate: parseFloat(c[2]), 
-                annual: parseFloat(c[3]),
-                date: c[0]  // <--- ADD THIS LINE (Captures the date/time)
-            };
+            if (!last) throw new Error("Format Error");
 
-            // UPDATE CARDS
+            document.getElementById('last-update').innerText = last.date;
             document.getElementById('bond-yield').innerText = last.yield + '%';
             document.getElementById('total-rate').innerText = last.totalRate + '%';
             document.getElementById('total-annual').innerText = '$' + (last.annual / 1000000).toFixed(1) + 'M';
 
-            // CALCULATE TABLE ROWS LIVE (To keep logic simple)
+            // Calculate rows
             const r = last.totalRate / 100;
             const calc = (p) => {
                 const num = p * (r * Math.pow(1+r, term));
                 const den = Math.pow(1+r, term) - 1;
                 const pay = num / den;
-                const interest = (pay * term) - p;
-                return { pay: (pay/1000000).toFixed(2) + 'M', int: (interest/1000000).toFixed(1) + 'M' };
+                return { pay: (pay/1000000).toFixed(2) + 'M', int: (((pay*term)-p)/1000000).toFixed(1) + 'M' };
             };
-
-            const arena = calc(p_arena);
-            document.getElementById('row-arena-pay').innerText = '$' + arena.pay;
-            document.getElementById('row-arena-int').innerText = '$' + arena.int;
-
-            const police = calc(p_police);
-            document.getElementById('row-police-pay').innerText = '$' + police.pay;
-            document.getElementById('row-police-int').innerText = '$' + police.int;
-
-            const sw = calc(p_sw);
-            document.getElementById('row-sw-pay').innerText = '$' + sw.pay;
-            document.getElementById('row-sw-int').innerText = '$' + sw.int;
             
-            const oak = calc(p_oak);
-            document.getElementById('row-oak-pay').innerText = '$' + oak.pay;
-            document.getElementById('row-oak-int').innerText = '$' + oak.int;
+            const arena = calc(p_arena); document.getElementById('row-arena-pay').innerText = '$' + arena.pay; document.getElementById('row-arena-int').innerText = '$' + arena.int;
+            const police = calc(p_police); document.getElementById('row-police-pay').innerText = '$' + police.pay; document.getElementById('row-police-int').innerText = '$' + police.int;
+            const sw = calc(p_sw); document.getElementById('row-sw-pay').innerText = '$' + sw.pay; document.getElementById('row-sw-int').innerText = '$' + sw.int;
+            const oak = calc(p_oak); document.getElementById('row-oak-pay').innerText = '$' + oak.pay; document.getElementById('row-oak-int').innerText = '$' + oak.int;
 
-
-            // CHART
             const ctx = document.getElementById('rateChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'Total City Annual Debt Payments ($ Millions)',
-                        data: annualCosts.map(c => c / 1000000),
-                        borderColor: '#c0392b',
-                        backgroundColor: 'rgba(192, 57, 43, 0.1)',
-                        fill: true
-                    }]
-                }
-            });
+            new Chart(ctx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Total Annual Pay', data: annualCosts.map(c=>c/1000000), borderColor: '#c0392b', fill: true }] } });
 
-        } catch (e) { console.error("Error:", e); }
+        } catch (e) { showError(e.message); }
     }
-
     fetchData();
 </script>
-
 </body>
 </html>
