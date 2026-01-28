@@ -2,8 +2,8 @@ name: Daily Rate Tracker
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # Runs every day at 1:00 PM UTC
-  workflow_dispatch:      # Allows manual "Run workflow" button
+    - cron: '0 13 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,10 +21,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install Dependencies
-        run: |
-          - name: Install Dependencies
-        run: |
-          pip install requests beautifulsoup4
+        run: pip install requests beautifulsoup4
 
       - name: Run Tracker Script
         run: python main.py
@@ -34,5 +31,4 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add interest_rate_log.csv
-          # Only commit if the file has actually changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update daily rates" && git push)
