@@ -6,7 +6,6 @@ on:
     - cron: '0 14 * * *' # Runs at 9:00 AM EST
   workflow_dispatch:
 
-# Explicitly grant permission at the top level
 permissions:
   contents: write
 
@@ -14,11 +13,8 @@ jobs:
   track-rates:
     runs-on: ubuntu-latest
     steps:
-      # FIX: Login immediately using the checkout step
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -31,10 +27,8 @@ jobs:
       - name: Run Script
         run: python main.py
 
-      - name: Save Data
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add interest_rate_log.csv
-          git commit -m "Daily Update" || exit 0
-          git push
+      - name: Save Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Daily Rate Update"
+          file_pattern: interest_rate_log.csv
