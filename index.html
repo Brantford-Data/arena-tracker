@@ -18,9 +18,11 @@
 
         .error-box { background: #fadbd8; border-left: 5px solid #c0392b; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: #721c24; border-radius: 4px; display: none; }
         
-        /* Cards */
+        /* Grid Layouts */
         .rate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        
+        /* Cards */
         .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
         .card h3 { margin: 0 0 5px 0; font-size: 0.85rem; color: #7f8c8d; }
         .card .value { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
@@ -35,22 +37,18 @@
         tfoot tr { background-color: #e8eaeb; border-top: 2px solid #2c3e50; font-weight: bold; }
         tfoot td { color: #2c3e50; }
 
-        /* Chart */
         .chart-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
-        @media (max-width: 600px) {
-            .rate-grid, .impact-grid { grid-template-columns: 1fr !important; }
-        }
+        @media (max-width: 600px) { .rate-grid, .impact-grid { grid-template-columns: 1fr !important; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Brantford Debt Dashboard (v5)</h1>
+        <h1>Brantford Debt Dashboard (v6)</h1>
         <p class="subtitle">Tracking the interest rate risk on planned Capital Projects</p>
         <p class="meta-info">
-            Last Updated: <span id="last-update" style="font-weight:bold;">Loading...</span>
+            Last Updated: <span id="last-update" style="font-weight:bold;">Initializing...</span>
             <span id="source-label" class="source-tag" style="display:none">SOURCE</span>
         </p>
     </header>
@@ -64,21 +62,9 @@
     </div>
 
     <div class="impact-grid">
-        <div class="card danger">
-            <h3>Total Estimated Debt</h3>
-            <div class="value" id="total-principal">$337.0 M</div>
-            <div class="sub-value">Combined Project Value</div>
-        </div>
-        <div class="card danger">
-            <h3>Total Annual Payments</h3>
-            <div class="value" id="total-annual">$--</div>
-            <div class="sub-value">City-wide Tax Burden</div>
-        </div>
-        <div class="card" style="border: 2px solid #2c3e50;">
-            <h3>Cost Per Household</h3>
-            <div class="value" id="household-impact">$--</div>
-            <div class="sub-value">Per Year (Est.)</div>
-        </div>
+        <div class="card danger"><h3>Total Estimated Debt</h3><div class="value" id="total-principal">$337.0 M</div><div class="sub-value">Combined Project Value</div></div>
+        <div class="card danger"><h3>Total Annual Payments</h3><div class="value" id="total-annual">$--</div><div class="sub-value">City-wide Tax Burden</div></div>
+        <div class="card" style="border: 2px solid #2c3e50;"><h3>Cost Per Household</h3><div class="value" id="household-impact">$--</div><div class="sub-value">Per Year (Est.)</div></div>
     </div>
 
     <h3>Project Breakdown (Estimated)</h3>
@@ -91,62 +77,108 @@
             <tr><td>Oak Park Rd Extension</td><td class="num">$97.0 M</td><td class="num" id="row-oak-pay">--</td><td class="num" id="row-oak-int">--</td></tr>
         </tbody>
         <tfoot>
-            <tr>
-                <td>TOTALS</td>
-                <td class="num" id="table-total-principal">--</td>
-                <td class="num" id="table-total-annual">--</td>
-                <td class="num" id="table-total-interest">--</td>
-            </tr>
+            <tr><td>TOTALS</td><td class="num" id="table-total-principal">--</td><td class="num" id="table-total-annual">--</td><td class="num" id="table-total-interest">--</td></tr>
         </tfoot>
     </table>
-
     <div class="chart-container"><canvas id="rateChart"></canvas></div>
 </div>
 
 <script>
-    const p_arena = 140000000; 
-    const p_police = 56000000; 
-    const p_sw = 44000000; 
-    const p_oak = 97000000; 
-    const term = 30;
+    // --- SAFE VARIABLES ---
+    const p_arena = 140000000; const p_police = 56000000; const p_sw = 44000000; const p_oak = 97000000; const term = 30;
     const households = 45000; 
 
+    // --- DEBUGGER ---
+    const statusSpan = document.getElementById('last-update');
+    function setStatus(msg) { statusSpan.innerText = msg; console.log(msg); }
     function showError(msg) {
         const box = document.getElementById('debug-console');
         box.style.display = 'block';
         box.innerHTML = "<strong>System Error:</strong> " + msg;
+        setStatus("Error Detected");
     }
 
+    // --- MAIN SCRIPT ---
     async function fetchData() {
         try {
-            const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
-            if (!response.ok) throw new Error("File not found (404)");
+            setStatus("Step 1: Connecting...");
             
+            // Force cache bust
+            const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
+            if (!response.ok) throw new Error("File missing (Error " + response.status + ")");
+            
+            setStatus("Step 2: Reading Data...");
             const data = await response.text();
             const rows = data.split('\n').slice(1).filter(r => r.trim() !== '');
-            if (rows.length === 0) throw new Error("File is empty");
+            if (rows.length === 0) throw new Error("File is empty (Robot issue)");
 
+            setStatus("Step 3: Parsing...");
             const dates = []; const annualCosts = []; let last = null;
+            
             rows.forEach(row => {
                 const c = row.split(',');
                 if (c.length >= 4) {
                     dates.push(c[0]);
                     annualCosts.push(parseFloat(c[3]));
-                    let src = (c.length > 5) ? c[5] : ""; 
+                    let src = (c.length > 5) ? c[5] : "";
                     last = { date: c[0], yield: parseFloat(c[1]), totalRate: parseFloat(c[2]), annual: parseFloat(c[3]), source: src };
                 }
             });
 
-            if (!last) throw new Error("Format Error");
+            if (!last) throw new Error("No valid rows found in CSV");
 
-            // --- 1. Basic Updates ---
-            document.getElementById('last-update').innerText = last.date;
-            document.getElementById('bond-yield').innerText = last.yield + '%';
-            document.getElementById('total-rate').innerText = last.totalRate + '%';
+            setStatus(last.date); // SUCCESS!
 
-            // Source Label
+            // --- UI UPDATES ---
             if (last.source && last.source.trim() !== "") {
                 const srcLabel = document.getElementById('source-label');
                 srcLabel.style.display = "inline-block";
                 srcLabel.innerText = "DATA: " + last.source.toUpperCase();
-                srcLabel.style.backgroundColor = last.source.includes("Trading") ? "#e1f
+                srcLabel.style.backgroundColor = last.source.includes("Trading") ? "#e1f5fe" : "#fff3cd";
+            }
+
+            document.getElementById('bond-yield').innerText = last.yield + '%';
+            document.getElementById('total-rate').innerText = last.totalRate + '%';
+
+            // --- MATH ---
+            const totalAnnual = last.annual;
+            const totalPrincipal = p_arena + p_police + p_sw + p_oak;
+            const totalInterest = (totalAnnual * term) - totalPrincipal;
+            const perHousehold = totalAnnual / households;
+
+            // --- FILL CARDS ---
+            document.getElementById('total-annual').innerText = '$' + (totalAnnual / 1000000).toFixed(1) + 'M';
+            document.getElementById('household-impact').innerText = '$' + perHousehold.toFixed(0);
+            document.getElementById('total-principal').innerText = '$' + (totalPrincipal / 1000000).toFixed(1) + ' M';
+
+            // --- FILL TABLE FOOTER ---
+            document.getElementById('table-total-principal').innerText = '$' + (totalPrincipal / 1000000).toFixed(1) + ' M';
+            document.getElementById('table-total-annual').innerText = '$' + (totalAnnual / 1000000).toFixed(2) + 'M';
+            document.getElementById('table-total-interest').innerText = '$' + (totalInterest / 1000000).toFixed(1) + 'M';
+
+            // --- FILL TABLE ROWS ---
+            const r = last.totalRate / 100;
+            const calc = (p) => {
+                const num = p * (r * Math.pow(1+r, term));
+                const den = Math.pow(1+r, term) - 1;
+                const pay = num / den;
+                return { pay: (pay/1000000).toFixed(2) + 'M', int: (((pay*term)-p)/1000000).toFixed(1) + 'M' };
+            };
+            
+            const arena = calc(p_arena); document.getElementById('row-arena-pay').innerText = '$' + arena.pay; document.getElementById('row-arena-int').innerText = '$' + arena.int;
+            const police = calc(p_police); document.getElementById('row-police-pay').innerText = '$' + police.pay; document.getElementById('row-police-int').innerText = '$' + police.int;
+            const sw = calc(p_sw); document.getElementById('row-sw-pay').innerText = '$' + sw.pay; document.getElementById('row-sw-int').innerText = '$' + sw.int;
+            const oak = calc(p_oak); document.getElementById('row-oak-pay').innerText = '$' + oak.pay; document.getElementById('row-oak-int').innerText = '$' + oak.int;
+
+            // --- CHART ---
+            const ctx = document.getElementById('rateChart').getContext('2d');
+            new Chart(ctx, { type: 'line', data: { labels: dates, datasets: [{ label: 'Total Annual Pay', data: annualCosts.map(c=>c/1000000), borderColor: '#c0392b', fill: true }] } });
+
+        } catch (e) { showError(e.message); }
+    }
+    
+    // Start immediately
+    fetchData();
+</script>
+</body>
+</html>
