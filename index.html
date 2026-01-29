@@ -45,7 +45,7 @@
 
 <div class="container">
     <header>
-        <h1>Brantford Debt Dashboard (v6)</h1>
+        <h1>Brantford Debt Dashboard (v7)</h1>
         <p class="subtitle">Tracking the interest rate risk on planned Capital Projects</p>
         <p class="meta-info">
             Last Updated: <span id="last-update" style="font-weight:bold;">Initializing...</span>
@@ -69,28 +69,66 @@
 
     <h3>Project Breakdown (Estimated)</h3>
     <table>
-        <thead><tr><th>Project Name</th><th class="num">Principal</th><th class="num">Annual Payment</th><th class="num">30-Year Interest</th></tr></thead>
+        <thead>
+            <tr>
+                <th>Project Name</th>
+                <th class="num">Principal</th>
+                <th class="num">Annual Payment</th>
+                <th class="num">Cost / Household</th>
+                <th class="num">30-Year Interest</th>
+            </tr>
+        </thead>
         <tbody>
-            <tr><td>SEC Arena</td><td class="num">$140.0 M</td><td class="num" id="row-arena-pay">--</td><td class="num" id="row-arena-int">--</td></tr>
-            <tr><td>Police Station Redevelop.</td><td class="num">$56.0 M</td><td class="num" id="row-police-pay">--</td><td class="num" id="row-police-int">--</td></tr>
-            <tr><td>Southwest Comm. Centre</td><td class="num">$44.0 M</td><td class="num" id="row-sw-pay">--</td><td class="num" id="row-sw-int">--</td></tr>
-            <tr><td>Oak Park Rd Extension</td><td class="num">$97.0 M</td><td class="num" id="row-oak-pay">--</td><td class="num" id="row-oak-int">--</td></tr>
+            <tr>
+                <td>SEC Arena</td>
+                <td class="num">$140.0 M</td>
+                <td class="num" id="row-arena-pay">--</td>
+                <td class="num" id="row-arena-hh">--</td>
+                <td class="num" id="row-arena-int">--</td>
+            </tr>
+            <tr>
+                <td>Police Station Redevelop.</td>
+                <td class="num">$56.0 M</td>
+                <td class="num" id="row-police-pay">--</td>
+                <td class="num" id="row-police-hh">--</td>
+                <td class="num" id="row-police-int">--</td>
+            </tr>
+            <tr>
+                <td>Southwest Comm. Centre</td>
+                <td class="num">$44.0 M</td>
+                <td class="num" id="row-sw-pay">--</td>
+                <td class="num" id="row-sw-hh">--</td>
+                <td class="num" id="row-sw-int">--</td>
+            </tr>
+            <tr>
+                <td>Oak Park Rd Extension</td>
+                <td class="num">$97.0 M</td>
+                <td class="num" id="row-oak-pay">--</td>
+                <td class="num" id="row-oak-hh">--</td>
+                <td class="num" id="row-oak-int">--</td>
+            </tr>
         </tbody>
         <tfoot>
-            <tr><td>TOTALS</td><td class="num" id="table-total-principal">--</td><td class="num" id="table-total-annual">--</td><td class="num" id="table-total-interest">--</td></tr>
+            <tr>
+                <td>TOTALS</td>
+                <td class="num" id="table-total-principal">--</td>
+                <td class="num" id="table-total-annual">--</td>
+                <td class="num" id="table-total-hh">--</td>
+                <td class="num" id="table-total-interest">--</td>
+            </tr>
         </tfoot>
     </table>
     <div class="chart-container"><canvas id="rateChart"></canvas></div>
 </div>
 
 <script>
-    // --- SAFE VARIABLES ---
+    // --- VARIABLES ---
     const p_arena = 140000000; const p_police = 56000000; const p_sw = 44000000; const p_oak = 97000000; const term = 30;
     const households = 45000; 
 
     // --- DEBUGGER ---
     const statusSpan = document.getElementById('last-update');
-    function setStatus(msg) { statusSpan.innerText = msg; console.log(msg); }
+    function setStatus(msg) { statusSpan.innerText = msg; }
     function showError(msg) {
         const box = document.getElementById('debug-console');
         box.style.display = 'block';
@@ -101,20 +139,15 @@
     // --- MAIN SCRIPT ---
     async function fetchData() {
         try {
-            setStatus("Step 1: Connecting...");
-            
-            // Force cache bust
+            setStatus("Connecting...");
             const response = await fetch('./interest_rate_log.csv?t=' + new Date().getTime());
             if (!response.ok) throw new Error("File missing (Error " + response.status + ")");
             
-            setStatus("Step 2: Reading Data...");
             const data = await response.text();
             const rows = data.split('\n').slice(1).filter(r => r.trim() !== '');
             if (rows.length === 0) throw new Error("File is empty (Robot issue)");
 
-            setStatus("Step 3: Parsing...");
             const dates = []; const annualCosts = []; let last = null;
-            
             rows.forEach(row => {
                 const c = row.split(',');
                 if (c.length >= 4) {
@@ -127,7 +160,7 @@
 
             if (!last) throw new Error("No valid rows found in CSV");
 
-            setStatus(last.date); // SUCCESS!
+            setStatus(last.date);
 
             // --- UI UPDATES ---
             if (last.source && last.source.trim() !== "") {
@@ -148,12 +181,13 @@
 
             // --- FILL CARDS ---
             document.getElementById('total-annual').innerText = '$' + (totalAnnual / 1000000).toFixed(1) + 'M';
-            document.getElementById('household-impact').innerText = '$' + perHousehold.toFixed(0);
+            document.getElementById('household-impact').innerText = '$' + perHousehold.toFixed(2);
             document.getElementById('total-principal').innerText = '$' + (totalPrincipal / 1000000).toFixed(1) + ' M';
 
             // --- FILL TABLE FOOTER ---
             document.getElementById('table-total-principal').innerText = '$' + (totalPrincipal / 1000000).toFixed(1) + ' M';
             document.getElementById('table-total-annual').innerText = '$' + (totalAnnual / 1000000).toFixed(2) + 'M';
+            document.getElementById('table-total-hh').innerText = '$' + perHousehold.toFixed(2); // New Footer
             document.getElementById('table-total-interest').innerText = '$' + (totalInterest / 1000000).toFixed(1) + 'M';
 
             // --- FILL TABLE ROWS ---
@@ -162,13 +196,38 @@
                 const num = p * (r * Math.pow(1+r, term));
                 const den = Math.pow(1+r, term) - 1;
                 const pay = num / den;
-                return { pay: (pay/1000000).toFixed(2) + 'M', int: (((pay*term)-p)/1000000).toFixed(1) + 'M' };
+                // Calculate per household for this specific project
+                const hh = pay / households;
+                return { 
+                    pay: (pay/1000000).toFixed(2) + 'M', 
+                    int: (((pay*term)-p)/1000000).toFixed(1) + 'M',
+                    hh: '$' + hh.toFixed(2) 
+                };
             };
             
-            const arena = calc(p_arena); document.getElementById('row-arena-pay').innerText = '$' + arena.pay; document.getElementById('row-arena-int').innerText = '$' + arena.int;
-            const police = calc(p_police); document.getElementById('row-police-pay').innerText = '$' + police.pay; document.getElementById('row-police-int').innerText = '$' + police.int;
-            const sw = calc(p_sw); document.getElementById('row-sw-pay').innerText = '$' + sw.pay; document.getElementById('row-sw-int').innerText = '$' + sw.int;
-            const oak = calc(p_oak); document.getElementById('row-oak-pay').innerText = '$' + oak.pay; document.getElementById('row-oak-int').innerText = '$' + oak.int;
+            // Arena
+            const arena = calc(p_arena); 
+            document.getElementById('row-arena-pay').innerText = '$' + arena.pay; 
+            document.getElementById('row-arena-hh').innerText = arena.hh;
+            document.getElementById('row-arena-int').innerText = '$' + arena.int;
+
+            // Police
+            const police = calc(p_police); 
+            document.getElementById('row-police-pay').innerText = '$' + police.pay; 
+            document.getElementById('row-police-hh').innerText = police.hh;
+            document.getElementById('row-police-int').innerText = '$' + police.int;
+
+            // Southwest
+            const sw = calc(p_sw); 
+            document.getElementById('row-sw-pay').innerText = '$' + sw.pay; 
+            document.getElementById('row-sw-hh').innerText = sw.hh;
+            document.getElementById('row-sw-int').innerText = '$' + sw.int;
+
+            // Oak Park
+            const oak = calc(p_oak); 
+            document.getElementById('row-oak-pay').innerText = '$' + oak.pay; 
+            document.getElementById('row-oak-hh').innerText = oak.hh;
+            document.getElementById('row-oak-int').innerText = '$' + oak.int;
 
             // --- CHART ---
             const ctx = document.getElementById('rateChart').getContext('2d');
@@ -177,7 +236,6 @@
         } catch (e) { showError(e.message); }
     }
     
-    // Start immediately
     fetchData();
 </script>
 </body>
